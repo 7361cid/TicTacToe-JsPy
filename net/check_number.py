@@ -18,12 +18,21 @@ hidden_size = batch_size = 10
 
 iter = 5
 
-def img_to_array():
-    img_path = r"C:\Users\chern\PycharmProjects\jsPractice\net\images\number1.jpg"
-    img = Image.open(img_path).convert("1").resize((28, 28))
-    img_arr = np.array(img, dtype='float32')
+def img_to_array(img_path, resize=True, convert_l=False):
+    if resize:
+        img = Image.open(img_path).resize((28, 28))
+    else:
+        img = Image.open(img_path)
+    if convert_l:
+        img = img.convert("L")
+    img_arr = np.array(img, dtype='float32')  # dtype='float32'
+
     # img.save(r"C:\Users\chern\PycharmProjects\jsPractice\net\images\number1_c.jpg")
     return img_arr
+
+def img_from_array(np_arr):
+    new_img = Image.fromarray(np_arr)  # mode="L"
+    return new_img
 
 def softmax(x, axis=1):
     temp = np.exp(x)
@@ -42,10 +51,14 @@ class Net:
         self.weights = self.weights + (input_data.T.dot(diff)/batch_size)
 
 
-images = train_X[0:1000].reshape(1000, 28*28)/255
+images = train_X[0:1000].reshape(1000, 28*28)/255    # на 10К ОШИБКИ
 labels = train_y[0:1000]
 print(f"images [0] {images[0]} \n {type(images[0])}")
 new_labels = np.zeros((len(labels), 10))
+
+img_new = img_from_array(train_X[0])
+img_new.save("test.jpg")
+
 for i, j in enumerate(labels):
     new_labels[i][j] = 1
 labels = new_labels
@@ -75,7 +88,7 @@ for i in range(iter):
         # print(f"diff[0] {diff[0]}")
     print(f"LOG iter{i}  error {error}  correct_count {correct_count}  all_count {all_count}")
 
-images_test = test_X[0:10].reshape(10, 28*28)/255
+images_test = test_X[0:10].reshape(10, 28*28)/255  # проверить на train
 labels_test = test_y[0:10]
 new_labels_test = np.zeros((len(labels_test), 10))
 for i, j in enumerate(labels_test):
@@ -84,12 +97,31 @@ labels_test = new_labels
 
 correct_count_test = 0
 all_count_test = 0
-for i in range(len(images_test)):
-    input_data_test = images_test[i]
-    predict = net_obj.feedforfard(input_data_test, axis=0)
-    if np.argmax(predict) == np.argmax(new_labels_test[i]):
-        print(f"iter {i}  np.argmax(predict) {np.argmax(predict)}---{np.argmax(new_labels_test[i])}  ")
-        correct_count_test += 1
-    all_count_test += 1
-print(f"correct_count_test {correct_count_test}  all_count_test {all_count_test}")
+#for i in range(len(images_test)):
+
+data_from_lib = images_test[0]
+predict = net_obj.feedforfard(data_from_lib, axis=0)
+image_test = img_from_array(test_X[0])   # исп test_X а не images_test из-за размерности
+image_test.save(f"image_test{0}.jpg")
+
+for i in range(10):
+    img_path = fr"C:\Users\chern\PycharmProjects\jsPractice\net\image_test{i}.jpg"
+    array_from_img = img_to_array(img_path)
+
+    recovery_img = img_from_array(array_from_img)
+    recovery_img.convert('RGB').save(fr"C:\Users\chern\PycharmProjects\jsPractice\net\image_test_recovery{i}.jpg")
+
+    data_from_img = array_from_img.reshape(1, 28 * 28)/255
+    predict = net_obj.feedforfard(data_from_img[0], axis=0)
+    predic_result = np.argmax(predict)
+    print(f"predic_result from img {predic_result} - {np.argmax(labels_test[i])}")
+
+for i in range(1, 4):
+    img_path = fr"C:\Users\chern\PycharmProjects\jsPractice\net\images\number_{i}.jpg"
+    array_from_img = img_to_array(img_path, convert_l=True)
+    data_from_img = array_from_img.reshape(1, 28 * 28) / 255
+    predict = net_obj.feedforfard(data_from_img[0], axis=0)
+    predic_result = np.argmax(predict)
+    print(f"predic_result from custom img {predic_result} - {i}")
+
 
